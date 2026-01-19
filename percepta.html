@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Percepta - Twin Gemini Core</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- TensorFlow.js (Offline Backup) -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    
+    <!-- Markdown & PDF Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Icons & Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #020617; color: white; }
+        .font-mono-hud { font-family: 'Share Tech Mono', monospace; }
+        
+        .glass-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
+        .glass-modal { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.2); }
+        
+        .hud-corner { position: absolute; width: 40px; height: 40px; border: 2px solid #3b82f6; opacity: 0.7; transition: all 0.3s; z-index: 20; }
+        .hud-tl { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
+        .hud-tr { top: -2px; right: -2px; border-left: 0; border-bottom: 0; }
+        .hud-bl { bottom: -2px; left: -2px; border-right: 0; border-top: 0; }
+        .hud-br { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
+        
+        .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: rgba(255, 0, 0, 0.8); box-shadow: 0 0 15px #ff0000; animation: scan 3s ease-in-out infinite; opacity: 0; pointer-events: none; z-index: 25;}
+        @keyframes scan { 0% { top: 5%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 95%; opacity: 0; } }
+        
+        canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+        
+        .adaptive-wrapper {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 0 0 1px #1e293b, 0 20px 50px rgba(0,0,0,0.5);
+            background: #000;
+        }
+        
+        .markdown-body h1, .markdown-body h2 { color: #f87171; font-weight: bold; margin-bottom: 0.5rem; margin-top: 1rem; }
+        .markdown-body p { margin-bottom: 0.5rem; line-height: 1.6; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-[#020617] selection:bg-red-500/30">
+
+    <!-- Top Bar -->
+    <header class="h-16 border-b border-white/5 bg-[#0b1121] flex items-center justify-between px-6 z-50 shadow-lg shrink-0">
+        <div class="flex items-center gap-4">
+            <!-- FIXED LOGO SECTION -->
+            <div class="relative w-12 h-12 flex items-center justify-center group cursor-pointer rounded-xl bg-gradient-to-br from-slate-800 to-black border border-white/10 overflow-hidden shadow-lg shadow-blue-900/20">
+                <div class="absolute inset-0 bg-blue-500 blur-md opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                <img src="https://lh3.googleusercontent.com/pw/AP1GczMeE6Zlda14eqeNydmTrMRxMCillUZdecpqIc_J1OKq537BkHue2OirieMeorXx0fA_Q1s-aHf7SZf26QFLazXlSINUb3dEaWZB1p9pgHp-FqTaRgxWXr9kj85oFxsDkmw2Ryqn5B7G-hCK46HfTyo=w713-h766-s-no-gm?authuser=0" 
+                     alt="Percepta Logo" 
+                     class="w-full h-full object-cover transform scale-110 group-hover:scale-125 transition-transform duration-500"
+                     onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+                <i class="fa-solid fa-eye text-2xl text-blue-500 relative z-10 hidden"></i>
+            </div>
+            
+            <div>
+                <h1 class="text-xl font-bold tracking-wide text-white glow-text font-mono-hud uppercase">Percepta</h1>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <!-- Config button removed -->
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside class="w-72 bg-[#0b1121] border-l border-white/5 flex flex-col z-40 hidden md:flex shrink-0">
+            
+            <div class="flex border-b border-white/5">
+                <button onclick="switchSidebarTab('controls')" id="tab-controls" class="flex-1 py-3 text-xs font-bold text-red-400 border-b-2 border-red-500 bg-white/5">التحكم</button>
+                <button onclick="switchSidebarTab('history')" id="tab-history" class="flex-1 py-3 text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors">السجل</button>
+            </div>
+
+            <div id="content-controls" class="p-6 flex flex-col gap-6 overflow-y-auto flex-1">
+                
+                <div class="space-y-3">
+                    <h3 class="text-slate-500 text-[10px] font-bold uppercase tracking-widest font-mono-hud">Input Source</h3>
+                    
+                    <label class="block w-full cursor-pointer group">
+                        <div class="w-full bg-slate-900/50 hover:bg-slate-800 border border-dashed border-slate-700 group-hover:border-blue-500 text-slate-400 group-hover:text-white p-6 rounded-xl text-sm font-bold transition-all flex flex-col items-center justify-center gap-3">
+                            <i class="fa-solid fa-cloud-arrow-up text-3xl transition-transform group-hover:-translate-y-1 text-blue-500"></i>
+                            <span>رفع صورة (Upload)</span>
+                        </div>
+                        <input type="file" id="sidebar-upload" accept="image/*" class="hidden" onchange="handleUpload(this)">
+                    </label>
+
+                    <!-- TEST IMAGE SECTION -->
+                    <div class="mt-4 pt-4 border-t border-white/5">
+                        <h3 class="text-slate-500 text-[10px] font-bold uppercase tracking-widest font-mono-hud mb-2">تجربة سريعة (Test)</h3>
+                        <div class="relative group cursor-pointer overflow-hidden rounded-xl border border-slate-700 hover:border-blue-500 transition-all" onclick="loadTestImage()">
+                            <img src="construction-zone-safety-1080x675.jpg" 
+                                 onerror="this.src='https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1000&auto=format&fit=crop'"
+                                 alt="Test Image" 
+                                 class="w-full h-24 object-cover opacity-60 group-hover:opacity-100 transition-opacity">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="bg-black/70 text-blue-400 text-[10px] font-bold px-2 py-1 rounded backdrop-blur-sm border border-blue-500/30 flex items-center gap-2">
+                                    <i class="fa-solid fa-play"></i> اضغط للتجربة
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3 mt-auto">
+                    <h3 class="text-slate-500 text-[10px] font-bold uppercase tracking-widest font-mono-hud">Active Cores</h3>
+                    <div class="glass-panel p-4 rounded-xl space-y-4">
+                        <div class="flex items-center gap-2 text-[10px]">
+                            <div id="status-vision" class="w-2 h-2 rounded-full bg-red-500"></div>
+                            <span class="text-slate-400">Gemini V1 (Vision)</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-[10px]">
+                            <div id="status-reasoning" class="w-2 h-2 rounded-full bg-red-500"></div>
+                            <span class="text-slate-400">Gemini V2 (Reasoning)</span>
+                        </div>
+                        <div class="h-px bg-white/10 my-2"></div>
+                        <div id="status-text" class="text-center text-[10px] text-slate-400 font-mono-hud uppercase tracking-wider">
+                            OFFLINE
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-history" class="p-4 flex-col gap-2 overflow-y-auto flex-1 hidden">
+                <div id="history-list" class="space-y-2">
+                    <div class="text-center text-xs text-slate-600 mt-10 font-mono-hud">NO SCANS RECORDED</div>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Main Display Area -->
+        <main class="flex-1 relative bg-[#050b14] flex flex-col items-center justify-center p-4 overflow-hidden">
+            
+            <div class="absolute inset-0 z-0 opacity-20 pointer-events-none" 
+                 style="background-image: linear-gradient(#1e293b 1px, transparent 1px), linear-gradient(90deg, #1e293b 1px, transparent 1px); background-size: 40px 40px;">
+            </div>
+
+            <div id="viewer-container" class="adaptive-wrapper group relative transition-all duration-300 min-h-[400px] min-w-[300px] flex items-center justify-center">
+                
+                <!-- HUD Overlay -->
+                <div class="absolute inset-0 z-20 pointer-events-none p-4 flex flex-col justify-between" id="hud-overlay">
+                    <div class="flex justify-between items-start">
+                        <div class="flex flex-col gap-2">
+                             <div id="mode-tag" class="text-[10px] font-mono-hud text-blue-400 bg-black/50 px-2 py-1 rounded backdrop-blur-sm w-fit border border-blue-500/30">
+                                TWIN-ENGINE MODE
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-2 items-end">
+                            <div class="text-[10px] font-mono-hud text-green-400 animate-pulse flex items-center gap-2 bg-black/50 px-2 py-1 rounded backdrop-blur-sm border border-green-500/30">
+                                <span class="w-2 h-2 bg-green-500 rounded-full"></span> LIVE
+                            </div>
+                            
+                            <!-- Status Indicator -->
+                            <div id="process-status" class="hidden text-xs font-mono-hud text-white px-4 py-2 rounded-lg backdrop-blur-xl border border-white/20 shadow-2xl transition-all flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300 z-50"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="hud-corner hud-tl"></div>
+                    <div class="hud-corner hud-tr"></div>
+                    <div class="hud-corner hud-bl"></div>
+                    <div class="hud-corner hud-br"></div>
+                </div>
+
+                <div id="scan-line" class="scan-line z-30"></div>
+
+                <img id="display-image" class="block max-w-full max-h-[75vh] w-auto h-auto object-contain hidden" crossorigin="anonymous">
+                
+                <canvas id="output-canvas" class="z-10 block w-full h-auto"></canvas>
+
+                <!-- Loading State Overlay -->
+                <div id="loading-overlay" class="absolute inset-0 bg-black/80 backdrop-blur-sm z-40 flex flex-col items-center justify-center hidden">
+                    <div class="relative">
+                        <div class="w-16 h-16 border-4 border-slate-700 rounded-full"></div>
+                        <div class="w-16 h-16 border-4 border-blue-500 rounded-full border-t-transparent animate-spin absolute top-0 left-0 shadow-[0_0_20px_rgba(59,130,246,0.5)]"></div>
+                    </div>
+                    <div class="mt-4 font-mono-hud text-blue-400 text-sm animate-pulse tracking-widest" id="loading-text">CONNECTING TO CLOUD...</div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center z-10 bg-[#0b1121] p-10 text-center">
+                    
+                    <div class="w-32 h-32 mb-6 rounded-2xl bg-gradient-to-br from-slate-800 to-black border border-white/10 overflow-hidden shadow-2xl flex items-center justify-center group">
+                         <img src="https://lh3.googleusercontent.com/pw/AP1GczMeE6Zlda14eqeNydmTrMRxMCillUZdecpqIc_J1OKq537BkHue2OirieMeorXx0fA_Q1s-aHf7SZf26QFLazXlSINUb3dEaWZB1p9pgHp-FqTaRgxWXr9kj85oFxsDkmw2Ryqn5B7G-hCK46HfTyo=w713-h766-s-no-gm?authuser=0" 
+                              alt="Percepta" 
+                              class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700"
+                              onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+                         <i class="fa-solid fa-eye text-5xl text-blue-500 hidden"></i>
+                    </div>
+
+                    <h2 class="text-3xl font-bold text-white mb-2 tracking-wide font-mono-hud">PERCEPTA</h2>
+                    <p class="text-slate-500 mb-8 text-sm max-w-xs mx-auto">Dual-Engine Safety Intelligence</p>
+                    
+                    <div class="flex gap-2 justify-center">
+                        <label class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-lg text-sm font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)] cursor-pointer flex items-center gap-2 transform hover:-translate-y-1">
+                            <i class="fa-solid fa-upload"></i>
+                            <span>ابدأ التحليل (Upload)</span>
+                            <input type="file" onchange="handleUpload(this)" accept="image/*" class="hidden">
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Card -->
+            <div id="report-card" class="absolute bottom-8 z-50 w-[90%] max-w-4xl translate-y-24 opacity-0 transition-all duration-500">
+                <div class="glass-panel rounded-xl overflow-hidden border-l-4 border-blue-500">
+                    <div class="p-4 bg-white/5 flex items-center justify-between cursor-pointer" onclick="toggleReport()">
+                        <div class="flex items-center gap-4">
+                            <div class="w-8 h-8 rounded bg-blue-500/20 flex items-center justify-center text-blue-400 border border-blue-500/30">
+                                <i class="fa-solid fa-file-contract"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white text-sm uppercase tracking-wide">Analysis Report</h4>
+                                <p class="text-[10px] text-slate-400 font-mono-hud" id="report-timestamp">Pending...</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="exportPDF(event)" class="w-8 h-8 rounded bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-colors" title="Download PDF">
+                                <i class="fa-solid fa-download text-xs"></i>
+                            </button>
+                            <i id="chevron-icon" class="fa-solid fa-chevron-down text-slate-500 text-xs transition-transform"></i>
+                        </div>
+                    </div>
+                    
+                    <div id="report-body" class="px-6 py-4 max-h-[40vh] overflow-y-auto bg-[#0b1121]/50 border-t border-white/5 transition-all">
+                        <div id="report-content" class="text-sm text-slate-300 markdown-body"></div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center">
+        <div class="glass-modal w-full max-w-md p-6 rounded-2xl shadow-2xl transform transition-all scale-95 opacity-0" id="settings-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-server text-blue-500"></i> إعدادات الموديلات
+                </h2>
+                <button onclick="closeSettings()" class="text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="space-y-4">
+                <div class="p-3 bg-white/5 rounded-lg border border-white/10">
+                    <label class="block text-xs font-bold text-green-400 uppercase mb-2">Gemini Vision Key (Detection)</label>
+                    <input type="password" id="key-vision" class="w-full bg-black/50 border border-slate-700 rounded px-3 py-2 text-xs text-white font-mono" placeholder="AIzaSy...">
+                </div>
+                
+                <div class="p-3 bg-white/5 rounded-lg border border-white/10">
+                    <label class="block text-xs font-bold text-blue-400 uppercase mb-2">Gemini Reasoning Key (Report)</label>
+                    <input type="password" id="key-reasoning" class="w-full bg-black/50 border border-slate-700 rounded px-3 py-2 text-xs text-white font-mono" placeholder="AIzaSy...">
+                </div>
+
+                <div class="pt-4 border-t border-white/10 flex justify-end gap-3">
+                    <button onclick="closeSettings()" class="px-4 py-2 text-xs font-bold text-slate-400">إلغاء</button>
+                    <button onclick="saveSettings()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded text-xs font-bold">حفظ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let KEYS = {
+            VISION: localStorage.getItem('gemini_vision_key') || "AIzaSyBPDdxH-imwiUxEV1gbB9P9fdm_LiAyjjI",
+            REASONING: localStorage.getItem('gemini_reasoning_key') || "AIzaSyBs5Qf7INBZlui7We_YkcHBZH68P8_pvXI"
+        };
+        
+        // --- Init ---
+        function init() {
+            updateStatusIndicators();
+        }
+
+        // --- Core Analysis Pipeline (Twin Engine) ---
+        async function runResilientAnalysis(imageElement) {
+            if (!KEYS.VISION || !KEYS.REASONING) { openSettings(); return; }
+
+            startLoading();
+            
+            // TASK 1: VISION (Engine 1)
+            updateProcessStatus('loading', 'Engine 1: Visual Scanning...');
+            let detections = [];
+            try {
+                detections = await detectObjectsGemini(imageElement);
+                renderVisualOutput(imageElement, detections);
+            } catch (err) {
+                console.error("Vision Error:", err);
+                updateProcessStatus('error', "Vision Engine Failed");
+                // Continue to reporting even if drawing fails? Maybe risky.
+            }
+
+            // TASK 2: REASONING (Engine 2)
+            if (detections.length > 0) {
+                updateProcessStatus('loading', 'Engine 2: Safety Analysis...');
+                try {
+                    const reportData = await analyzeContextGemini(imageElement, detections);
+                    displayReport(reportData);
+                    updateProcessStatus('success', 'Analysis Complete');
+                } catch (err) {
+                    console.error("Reasoning Error:", err);
+                    updateProcessStatus('error', "Reporting Engine Failed");
+                }
+            } else {
+                updateProcessStatus('error', "No objects detected.");
+            }
+            
+            stopLoading();
+        }
+
+        // --- ENGINE 1: GEMINI VISION (Detection) ---
+        async function detectObjectsGemini(img) {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+
+            // Specific Prompt for Engine 1
+            const prompt = `
+            Identify bounding boxes for 'person' and 'machine' (heavy equipment).
+            Return strictly JSON:
+            { "objects": [ { "label": "person", "box_2d": [ymin, xmin, ymax, xmax], "score": 0.95 } ] }
+            Use 0-1000 scale for boxes. No markdown.
+            `;
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${KEYS.VISION}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{text: prompt}, {inline_data: {mime_type: "image/jpeg", data: base64}}] }] })
+                });
+
+                const data = await res.json();
+                let txt = data.candidates[0].content.parts[0].text;
+                // Cleanup JSON
+                txt = txt.replace(/```json/g, '').replace(/```/g, '').trim();
+                const parsed = JSON.parse(txt);
+                return parsed.objects || [];
+            } catch (e) {
+                throw new Error("Vision API Error: " + e.message);
+            }
+        }
+
+        // --- ENGINE 2: GEMINI REASONING (Report) ---
+        async function analyzeContextGemini(img, detections) {
+            const summary = detections.map(d => d.label).join(', ');
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            const base64 = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
+
+            // Specific Prompt for Engine 2
+            const prompt = `
+            You are a Safety Officer. Based on this image and detected objects: [${summary}].
+            Provide a safety report in JSON (Arabic).
+            {
+                "risk_score": 0-100,
+                "risk_level": "Safe|Warning|Danger",
+                "safety_report": "## تقرير السلامة\n..."
+            }
+            No markdown blocks in response.
+            `;
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${KEYS.REASONING}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{text: prompt}, {inline_data: {mime_type: "image/jpeg", data: base64}}] }] })
+                });
+
+                const data = await res.json();
+                let txt = data.candidates[0].content.parts[0].text;
+                txt = txt.replace(/```json/g, '').replace(/```/g, '').trim();
+                return JSON.parse(txt);
+            } catch (e) {
+                throw new Error("Reasoning API Error: " + e.message);
+            }
+        }
+
+        // --- Visualization ---
+        function renderVisualOutput(img, detections) {
+            const canvas = document.getElementById('output-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            
+            // Draw original image
+            ctx.drawImage(img, 0, 0);
+            img.style.opacity = '0'; // Hide original
+
+            const humans = [];
+            const machines = [];
+
+            detections.forEach(det => {
+                const [ymin, xmin, ymax, xmax] = det.box_2d;
+                const x = (xmin/1000) * canvas.width;
+                const y = (ymin/1000) * canvas.height;
+                const w = ((xmax-xmin)/1000) * canvas.width;
+                const h = ((ymax-ymin)/1000) * canvas.height;
+
+                let color = 'blue';
+                if(det.label.includes('person')) { color = '#ef4444'; humans.push({x:x+w/2, y:y+h/2}); }
+                if(det.label.includes('machine')) { color = '#eab308'; machines.push({x:x+w/2, y:y+h/2}); }
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 4;
+                ctx.strokeRect(x,y,w,h);
+                
+                // Label
+                ctx.fillStyle = color;
+                const txt = `${det.label.toUpperCase()} ${Math.round(det.score*100)}%`;
+                const tw = ctx.measureText(txt).width + 10;
+                ctx.fillRect(x, y-25, tw, 25);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 16px Arial';
+                ctx.fillText(txt, x+5, y-7);
+            });
+
+            // Hazard Lines
+            const thresh = canvas.width * 0.15;
+            humans.forEach(h => {
+                machines.forEach(m => {
+                    const d = Math.hypot(h.x-m.x, h.y-m.y);
+                    if(d < thresh) {
+                        ctx.beginPath();
+                        ctx.moveTo(h.x, h.y); ctx.lineTo(m.x, m.y);
+                        ctx.strokeStyle = 'red'; ctx.lineWidth = 3; ctx.setLineDash([10,10]);
+                        ctx.stroke(); ctx.setLineDash([]);
+                        
+                        ctx.fillStyle = 'red';
+                        ctx.fillRect((h.x+m.x)/2-30, (h.y+m.y)/2-10, 60, 20);
+                        ctx.fillStyle = 'white';
+                        ctx.fillText("DANGER", (h.x+m.x)/2-25, (h.y+m.y)/2+5);
+                    }
+                });
+            });
+        }
+
+        // --- UI & Utils ---
+        function displayReport(data) {
+            document.getElementById('report-content').innerHTML = marked.parse(data.safety_report);
+            document.getElementById('report-timestamp').innerText = `ID: ${Math.floor(Math.random()*90000)}`;
+            document.getElementById('report-card').classList.remove('translate-y-24', 'opacity-0');
+        }
+
+        function handleUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            startLoading();
+            const img = document.getElementById('display-image');
+            img.src = URL.createObjectURL(file);
+            document.getElementById('empty-state').classList.add('hidden');
+            img.classList.remove('hidden');
+            img.onload = () => runResilientAnalysis(img);
+        }
+
+        function loadTestImage() {
+            startLoading();
+            const img = document.getElementById('display-image');
+            img.src = "construction-zone-safety-1080x675.jpg";
+            img.crossOrigin = "Anonymous";
+            document.getElementById('empty-state').classList.add('hidden');
+            img.classList.remove('hidden');
+            img.onload = () => runResilientAnalysis(img);
+            img.onerror = () => img.src = "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1000&auto=format&fit=crop";
+        }
+
+        // --- Settings & Status ---
+        function updateStatusIndicators() {
+            const v = document.getElementById('status-vision'), r = document.getElementById('status-reasoning'), t = document.getElementById('status-text');
+            v.className = KEYS.VISION ? "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]" : "w-2 h-2 rounded-full bg-red-500";
+            r.className = KEYS.REASONING ? "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]" : "w-2 h-2 rounded-full bg-red-500";
+            t.innerText = (KEYS.VISION && KEYS.REASONING) ? "TWIN ENGINE READY" : "KEYS MISSING";
+        }
+        
+        function openSettings() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+            document.getElementById('modal-gemini-key').value = KEYS.VISION;
+            document.getElementById('modal-hf-key').value = KEYS.REASONING;
+        }
+        function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
+        function saveSettings() {
+            KEYS.VISION = document.getElementById('modal-gemini-key').value.trim();
+            KEYS.REASONING = document.getElementById('modal-hf-key').value.trim();
+            localStorage.setItem('gemini_vision_key', KEYS.VISION);
+            localStorage.setItem('gemini_reasoning_key', KEYS.REASONING);
+            updateStatusIndicators();
+            closeSettings();
+        }
+
+        function startLoading() { document.getElementById('loading-overlay').classList.remove('hidden'); }
+        function stopLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
+        
+        function updateProcessStatus(type, msg) {
+            const el = document.getElementById('process-status');
+            el.innerHTML = msg;
+            el.className = `flex items-center gap-2 px-3 py-1 rounded text-xs ${type==='loading'?'text-yellow-300 bg-yellow-900/20':type==='error'?'text-red-300 bg-red-900/20':'text-green-300 bg-green-900/20'}`;
+            el.classList.remove('hidden');
+        }
+
+        function toggleReport() {
+            const b = document.getElementById('report-body');
+            b.style.maxHeight = b.style.maxHeight === '0px' ? '50vh' : '0px';
+        }
+        
+        function exportPDF(e) {
+            e.stopPropagation();
+            const el = document.createElement('div');
+            el.innerHTML = document.getElementById('report-content').innerHTML;
+            html2pdf().from(el).save('report.pdf');
+        }
+
+        function switchSidebarTab(t) {
+            // Simple tab switch
+            document.getElementById('content-controls').classList.toggle('hidden', t!=='controls');
+            document.getElementById('content-history').classList.toggle('hidden', t!=='history');
+        }
+
+        init();
+    </script>
+</body>
+</html>
