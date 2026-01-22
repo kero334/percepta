@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Percepta - Industrial Safety Intelligence</title>
+    <meta name="description"
+        content="Transform visual data into actionable safety intelligence. AI-powered industrial safety analysis for factories, warehouses, and construction sites.">
+
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Custom Design System -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        /* Critical inline styles for immediate render */
+        body {
+            font-family: 'Inter', 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #0a0f1a 0%, #0d1117 100%);
+            color: #f1f5f9;
+        }
+
+        .font-mono-hud {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Loading screen */
+        .loader-bg {
+            background: radial-gradient(ellipse at center, #0a1628 0%, #020617 100%);
+        }
+    </style>
+</head>
+
+<body class="h-screen flex flex-col overflow-hidden selection:bg-sky-500/30">
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         DESKTOP WARNING MODAL
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div id="desktop-warning-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+        style="background: linear-gradient(135deg, rgba(5, 11, 20, 0.98) 0%, rgba(2, 6, 23, 0.98) 100%); backdrop-filter: blur(20px);">
+
+        <!-- Modal Content -->
+        <div class="relative max-w-lg w-full bg-gradient-to-b from-slate-800/90 to-slate-900/90 rounded-2xl border border-amber-500/30 shadow-2xl shadow-amber-500/10 p-8 text-center"
+            style="animation: modalPulse 2s ease-in-out infinite;">
+
+            <!-- Warning Icon -->
+            <div
+                class="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/10 flex items-center justify-center border border-amber-500/30">
+                <i class="fa-solid fa-desktop text-4xl text-amber-400"></i>
+            </div>
+
+            <!-- Warning Title -->
+            <h2 class="text-2xl font-bold text-white mb-4 font-cairo">
+                <i class="fa-solid fa-triangle-exclamation text-amber-400 mr-2"></i>
+                تنبيه مهم
+            </h2>
+
+            <!-- Warning Message - English -->
+            <p class="text-slate-300 text-lg leading-relaxed mb-4" dir="ltr">
+                For the best experience and full functionality, please access this website using a <span
+                    class="text-amber-400 font-semibold">desktop or laptop computer</span>.
+                Mobile devices are not fully supported.
+            </p>
+
+            <!-- Warning Message - Arabic -->
+            <p class="text-slate-400 text-base leading-relaxed mb-8">
+                للحصول على أفضل تجربة وكامل الوظائف، يرجى استخدام <span class="text-amber-400 font-semibold">جهاز
+                    كمبيوتر مكتبي أو لابتوب</span>.
+                الأجهزة المحمولة غير مدعومة بالكامل.
+            </p>
+
+            <!-- OK Button -->
+            <button onclick="document.getElementById('desktop-warning-modal').style.display='none';"
+                class="px-10 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-900 font-bold text-lg rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg shadow-amber-500/30">
+                <i class="fa-solid fa-check mr-2"></i>
+                حسناً، فهمت
+            </button>
+
+            <!-- Subtext -->
+            <p class="text-slate-500 text-xs mt-4 font-mono-hud">Press OK to continue</p>
+        </div>
+    </div>
+
+    <style>
+        @keyframes modalPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 30px rgba(245, 158, 11, 0.1);
+            }
+
+            50% {
+                box-shadow: 0 0 50px rgba(245, 158, 11, 0.2);
+            }
+        }
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         HELP MODAL
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div id="help-modal" class="fixed inset-0 z-[9998] flex items-center justify-center p-4 hidden"
+        style="background: rgba(0,0,0,0.9); backdrop-filter: blur(10px);">
+
+        <div
+            class="relative max-w-md w-full bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl border border-sky-500/30 shadow-2xl p-6 overflow-y-auto max-h-[90vh]">
+
+            <!-- Close Button -->
+            <button onclick="closeHelpModal()"
+                class="absolute top-4 left-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
+                <i class="fa-solid fa-times"></i>
+            </button>
+
+            <!-- Title -->
+            <h2 class="text-xl font-bold text-white mb-6 text-center flex items-center justify-center gap-2">
+                <i class="fa-solid fa-circle-question text-sky-400"></i>
+                كيف تستخدم الموقع؟
+            </h2>
+
+            <!-- Instructions -->
+            <div class="space-y-4">
+
+                <!-- Instruction 1: Upload -->
+                <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-lg bg-sky-500/20 flex items-center justify-center">
+                            <i class="fa-solid fa-upload text-sky-400"></i>
+                        </div>
+                        <h3 class="text-white font-semibold">ابدأ التحليل</h3>
+                    </div>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        اضغط على هذا الزر لرفع صورة من جهازك. سيقوم النظام بتحليل الصورة تلقائياً واكتشاف المخاطر
+                        المحتملة.
+                    </p>
+                </div>
+
+                <!-- Instruction 2: Demo -->
+                <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                            <i class="fa-solid fa-play text-emerald-400"></i>
+                        </div>
+                        <h3 class="text-white font-semibold">عرض توضيحي</h3>
+                    </div>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        اضغط هنا لمشاهدة عرض توضيحي باستخدام صورة جاهزة. يساعدك على فهم كيفية عمل النظام.
+                    </p>
+                </div>
+
+                <!-- Instruction 3: Test Images -->
+                <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                            <i class="fa-solid fa-images text-amber-400"></i>
+                        </div>
+                        <h3 class="text-white font-semibold">صور تجريبية</h3>
+                    </div>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        على الجانب الأيمن ستجد صور تجريبية جاهزة. اضغط على أي صورة لبدء تحليلها فوراً.
+                    </p>
+                </div>
+
+                <!-- Instruction 4: Back Button -->
+                <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center">
+                            <i class="fa-solid fa-arrow-right text-rose-400"></i>
+                        </div>
+                        <h3 class="text-white font-semibold">العودة للرئيسية</h3>
+                    </div>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        أثناء عرض تحليل صورة، اضغط على زر "العودة للرئيسية" في الأعلى للرجوع إلى الصفحة الرئيسية.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Close Button -->
+            <button onclick="closeHelpModal()"
+                class="w-full mt-6 py-3 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-xl transition-colors">
+                فهمت، شكراً!
+            </button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         FIXED BOTTOM TEST IMAGES BAR (Mobile Only - OUTSIDE main content)
+         ═══════════════════════════════════════════════════════════════════ -->
+    <style>
+        #mobile-test-images-bar {
+            display: block;
+        }
+
+        @media (min-width: 768px) {
+            #mobile-test-images-bar {
+                display: none;
+            }
+        }
+    </style>
+    <div id="mobile-test-images-bar"
+        class="fixed bottom-0 left-0 right-0 z-[9990] bg-slate-900/95 backdrop-blur-xl border-t border-sky-500/30 p-3 shadow-2xl shadow-black/50">
+        <div class="flex items-center justify-center gap-2 max-w-sm mx-auto">
+            <span class="text-[9px] text-sky-400 font-bold uppercase tracking-wider whitespace-nowrap">
+                <i class="fa-solid fa-images mr-1"></i>صور تجريبية
+            </span>
+            <div class="flex gap-2">
+                <!-- Test Image 1 -->
+                <div class="cursor-pointer overflow-hidden rounded-lg border border-slate-700/50 hover:border-sky-500/50 transition-all"
+                    onclick="loadTestImage('https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=800&auto=format&fit=crop')">
+                    <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=100&auto=format&fit=crop"
+                        alt="Construction"
+                        class="w-12 h-10 object-cover opacity-80 hover:opacity-100 transition-opacity">
+                </div>
+                <!-- Test Image 2 -->
+                <div class="cursor-pointer overflow-hidden rounded-lg border border-slate-700/50 hover:border-amber-500/50 transition-all"
+                    onclick="loadTestImage('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800&auto=format&fit=crop')">
+                    <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=100&auto=format&fit=crop"
+                        alt="Factory" class="w-12 h-10 object-cover opacity-80 hover:opacity-100 transition-opacity">
+                </div>
+                <!-- Test Image 3 -->
+                <div class="cursor-pointer overflow-hidden rounded-lg border border-slate-700/50 hover:border-emerald-500/50 transition-all"
+                    onclick="loadTestImage('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800&auto=format&fit=crop')">
+                    <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=100&auto=format&fit=crop"
+                        alt="Warehouse" class="w-12 h-10 object-cover opacity-80 hover:opacity-100 transition-opacity">
+                </div>
+                <!-- Test Image 4 -->
+                <div class="cursor-pointer overflow-hidden rounded-lg border border-slate-700/50 hover:border-rose-500/50 transition-all"
+                    onclick="loadTestImage('https://images.unsplash.com/photo-1580901368919-7738efb0f87e?q=80&w=800&auto=format&fit=crop')">
+                    <img src="https://images.unsplash.com/photo-1580901368919-7738efb0f87e?q=80&w=100&auto=format&fit=crop"
+                        alt="Machinery" class="w-12 h-10 object-cover opacity-80 hover:opacity-100 transition-opacity">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         HEADER
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <header
+        class="h-16 border-b border-white/5 bg-[#0b1121]/90 backdrop-blur-xl flex items-center justify-between px-6 z-50 shadow-lg shrink-0">
+        <div class="flex items-center gap-4">
+            <!-- Logo -->
+            <div
+                class="relative w-12 h-12 flex items-center justify-center group cursor-pointer rounded-xl bg-gradient-to-br from-slate-800 to-black border border-white/10 overflow-hidden shadow-lg hover:shadow-sky-500/20 transition-all duration-500">
+                <div class="absolute inset-0 bg-sky-500 blur-md opacity-20 group-hover:opacity-40 transition-opacity">
+                </div>
+                <img src="https://lh3.googleusercontent.com/pw/AP1GczMeE6Zlda14eqeNydmTrMRxMCillUZdecpqIc_J1OKq537BkHue2OirieMeorXx0fA_Q1s-aHf7SZf26QFLazXlSINUb3dEaWZB1p9pgHp-FqTaRgxWXr9kj85oFxsDkmw2Ryqn5B7G-hCK46HfTyo=w713-h766-s-no-gm?authuser=0"
+                    alt="Percepta Logo"
+                    class="w-full h-full object-cover transform scale-110 group-hover:scale-125 transition-transform duration-500"
+                    onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+                <i class="fa-solid fa-eye text-2xl text-sky-400 relative z-10 hidden"></i>
+            </div>
+
+            <div>
+                <h1
+                    class="text-xl font-bold tracking-wider text-white font-mono-hud uppercase bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300">
+                    Percepta</h1>
+                <p class="text-[10px] text-slate-500 font-mono-hud tracking-widest">SAFETY INTELLIGENCE</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button onclick="openSettings()" style="display: none;"
+                class="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all">
+                <i class="fa-solid fa-gear text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         MAIN LAYOUT
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="flex flex-1 overflow-hidden">
+
+        <!-- SIDEBAR -->
+        <aside class="w-72 bg-[#0b1121] border-l border-white/5 flex flex-col z-40 hidden md:flex shrink-0">
+
+            <!-- Tabs -->
+            <div class="flex border-b border-white/5">
+                <button onclick="switchSidebarTab('controls')" id="tab-controls"
+                    class="flex-1 py-3 text-xs font-bold text-sky-400 border-b-2 border-sky-500 bg-white/5 transition-all">التحكم</button>
+                <button onclick="switchSidebarTab('history')" id="tab-history"
+                    class="flex-1 py-3 text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors">السجل</button>
+            </div>
+
+            <!-- Controls Content -->
+            <div id="content-controls" class="p-6 flex flex-col gap-6 overflow-y-auto flex-1">
+
+                <!-- Upload Section -->
+                <div class="space-y-3">
+                    <h3 class="text-slate-500 text-[10px] font-bold uppercase tracking-widest font-mono-hud">مصدر
+                        الإدخال</h3>
+
+                    <label class="block w-full cursor-pointer group">
+                        <div class="upload-area">
+                            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                            <span
+                                class="text-slate-400 group-hover:text-white text-sm font-semibold transition-colors">رفع
+                                صورة (Upload)</span>
+                            <span class="text-xs text-slate-600">PNG, JPG up to 10MB</span>
+                        </div>
+                        <input type="file" id="sidebar-upload" accept="image/*" class="hidden"
+                            onchange="handleUpload(this)">
+                    </label>
+
+                    <!-- Quick Test Section - Multiple Images -->
+                    <div class="mt-4 pt-4 border-t border-white/5">
+                        <h3 class="text-slate-500 text-[10px] font-bold uppercase tracking-widest font-mono-hud mb-3">
+                            صور تجريبية</h3>
+
+                        <!-- Test Images Grid -->
+                        <div class="grid grid-cols-2 gap-2">
+
+                            <!-- Test Image 1: Construction Site -->
+                            <div class="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-700/50 hover:border-sky-500/50 transition-all hover:shadow-lg hover:shadow-sky-500/10"
+                                onclick="loadTestImage('https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=800&auto=format&fit=crop')">
+                                <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=400&auto=format&fit=crop"
+                                    alt="Construction Site"
+                                    class="w-full h-16 object-cover opacity-50 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+                                <div
+                                    class="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/80 via-black/20 to-transparent">
+                                    <span
+                                        class="text-[9px] text-white/80 font-semibold group-hover:text-sky-400 transition-colors">موقع
+                                        بناء</span>
+                                </div>
+                                <div
+                                    class="absolute top-1 right-1 w-4 h-4 rounded bg-sky-500/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <i class="fa-solid fa-play text-[6px] text-sky-400"></i>
+                                </div>
+                            </div>
+
+                            <!-- Test Image 2: Industrial Factory -->
+                            <div class="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-700/50 hover:border-amber-500/50 transition-all hover:shadow-lg hover:shadow-amber-500/10"
+                                onclick="loadTestImage('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800&auto=format&fit=crop')">
+                                <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=400&auto=format&fit=crop"
+                                    alt="Industrial Factory"
+                                    class="w-full h-16 object-cover opacity-50 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+                                <div
+                                    class="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/80 via-black/20 to-transparent">
+                                    <span
+                                        class="text-[9px] text-white/80 font-semibold group-hover:text-amber-400 transition-colors">مصنع</span>
+                                </div>
+                                <div
+                                    class="absolute top-1 right-1 w-4 h-4 rounded bg-amber-500/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <i class="fa-solid fa-play text-[6px] text-amber-400"></i>
+                                </div>
+                            </div>
+
+                            <!-- Test Image 3: Warehouse -->
+                            <div class="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-700/50 hover:border-emerald-500/50 transition-all hover:shadow-lg hover:shadow-emerald-500/10"
+                                onclick="loadTestImage('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800&auto=format&fit=crop')">
+                                <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=400&auto=format&fit=crop"
+                                    alt="Warehouse"
+                                    class="w-full h-16 object-cover opacity-50 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+                                <div
+                                    class="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/80 via-black/20 to-transparent">
+                                    <span
+                                        class="text-[9px] text-white/80 font-semibold group-hover:text-emerald-400 transition-colors">مستودع</span>
+                                </div>
+                                <div
+                                    class="absolute top-1 right-1 w-4 h-4 rounded bg-emerald-500/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <i class="fa-solid fa-play text-[6px] text-emerald-400"></i>
+                                </div>
+                            </div>
+
+                            <!-- Test Image 4: Heavy Machinery -->
+                            <div class="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-700/50 hover:border-rose-500/50 transition-all hover:shadow-lg hover:shadow-rose-500/10"
+                                onclick="loadTestImage('https://images.unsplash.com/photo-1580901368919-7738efb0f87e?q=80&w=800&auto=format&fit=crop')">
+                                <img src="https://images.unsplash.com/photo-1580901368919-7738efb0f87e?q=80&w=400&auto=format&fit=crop"
+                                    alt="Heavy Machinery"
+                                    class="w-full h-16 object-cover opacity-50 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+                                <div
+                                    class="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/80 via-black/20 to-transparent">
+                                    <span
+                                        class="text-[9px] text-white/80 font-semibold group-hover:text-rose-400 transition-colors">معدات
+                                        ثقيلة</span>
+                                </div>
+                                <div
+                                    class="absolute top-1 right-1 w-4 h-4 rounded bg-rose-500/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <i class="fa-solid fa-play text-[6px] text-rose-400"></i>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Hint text -->
+                        <p class="text-[9px] text-slate-600 text-center mt-2 font-mono-hud">اضغط على أي صورة للتحليل</p>
+                    </div>
+                </div>
+
+                <!-- Engine Status -->
+                <div class="space-y-3 mt-auto">
+                    <h3 class="text-slate-500 text-[10px] font-bold uppercase tracking-widest font-mono-hud">Active
+                        Engines</h3>
+                    <div class="glass-panel p-4 rounded-xl space-y-3">
+                        <div class="flex items-center gap-3 text-[11px]">
+                            <div id="status-vision" class="status-dot offline"></div>
+                            <span class="text-slate-400">Gemini Vision</span>
+                            <span class="text-[9px] text-slate-600 mr-auto font-mono-hud">ENGINE 1</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-[11px]">
+                            <div id="status-reasoning" class="status-dot offline"></div>
+                            <span class="text-slate-400">Gemini Reasoning</span>
+                            <span class="text-[9px] text-slate-600 mr-auto font-mono-hud">ENGINE 2</span>
+                        </div>
+                        <div class="h-px bg-white/10 my-2"></div>
+                        <div id="status-text"
+                            class="text-center text-[10px] text-slate-500 font-mono-hud uppercase tracking-wider">
+                            CHECKING...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Content -->
+            <div id="content-history" class="p-4 flex-col gap-2 overflow-y-auto flex-1 hidden">
+                <div id="history-list" class="space-y-2">
+                    <div class="text-center text-xs text-slate-600 mt-10 font-mono-hud">NO SCANS RECORDED</div>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             MAIN DISPLAY AREA
+             ═══════════════════════════════════════════════════════════════════ -->
+        <main class="flex-1 relative bg-[#050b14] flex flex-col items-center justify-center p-4 overflow-hidden">
+
+            <!-- Grid Background -->
+            <div class="absolute inset-0 z-0 opacity-10 pointer-events-none"
+                style="background-image: linear-gradient(rgba(56,189,248,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.1) 1px, transparent 1px); background-size: 50px 50px;">
+            </div>
+
+            <!-- Viewer Container -->
+            <div id="viewer-container"
+                class="relative transition-all duration-300 min-h-[400px] min-w-[300px] flex items-center justify-center rounded-lg overflow-hidden"
+                style="box-shadow: 0 0 0 1px rgba(56,189,248,0.1), 0 25px 60px rgba(0,0,0,0.5);">
+
+                <!-- HUD Overlay -->
+                <div class="absolute inset-0 z-20 pointer-events-none p-4 flex flex-col justify-between"
+                    id="hud-overlay">
+                    <div class="flex justify-between items-start">
+                        <div class="flex flex-col gap-2">
+                            <!-- Back Button -->
+                            <button id="back-to-home-btn" onclick="goBackToHome()"
+                                class="text-[10px] font-mono-hud text-white bg-black/60 px-3 py-1.5 rounded-lg backdrop-blur-sm w-fit border border-white/20 flex items-center gap-2 hover:bg-white/10 hover:border-sky-500/50 transition-all cursor-pointer pointer-events-auto hidden">
+                                <i class="fa-solid fa-arrow-right"></i>
+                                العودة للرئيسية
+                            </button>
+                            <div id="mode-tag"
+                                class="text-[10px] font-mono-hud text-sky-400 bg-black/60 px-3 py-1.5 rounded-lg backdrop-blur-sm w-fit border border-sky-500/30 flex items-center gap-2">
+                                <span class="w-2 h-2 bg-sky-500 rounded-full animate-pulse"></span>
+                                DUAL-ENGINE MODE
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-2 items-end">
+                            <div
+                                class="text-[10px] font-mono-hud text-emerald-400 flex items-center gap-2 bg-black/60 px-3 py-1.5 rounded-lg backdrop-blur-sm border border-emerald-500/30">
+                                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> LIVE
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HUD Corners -->
+                    <div class="hud-corner hud-tl"></div>
+                    <div class="hud-corner hud-tr"></div>
+                    <div class="hud-corner hud-bl"></div>
+                    <div class="hud-corner hud-br"></div>
+                </div>
+
+                <!-- Scan Line -->
+                <div id="scan-line" class="scan-line z-30"></div>
+
+                <!-- Display Image (hidden after canvas render) -->
+                <img id="display-image" class="block max-w-full max-h-[75vh] w-auto h-auto object-contain hidden"
+                    crossorigin="anonymous">
+
+                <!-- Output Canvas (absolutely positioned over the image) -->
+                <canvas id="output-canvas" class="absolute inset-0 z-10 w-full h-full object-contain hidden"></canvas>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     LOADING OVERLAY (Multi-Stage Progress)
+                     ═══════════════════════════════════════════════════════════ -->
+                <div id="loading-overlay"
+                    class="absolute inset-0 bg-black/90 backdrop-blur-md z-40 flex flex-col items-center justify-center hidden">
+
+                    <!-- Animated Logo -->
+                    <div class="relative mb-8">
+                        <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-slate-800 to-black border border-sky-500/30 flex items-center justify-center overflow-hidden"
+                            style="box-shadow: 0 0 40px rgba(56,189,248,0.2);">
+                            <img src="https://lh3.googleusercontent.com/pw/AP1GczMeE6Zlda14eqeNydmTrMRxMCillUZdecpqIc_J1OKq537BkHue2OirieMeorXx0fA_Q1s-aHf7SZf26QFLazXlSINUb3dEaWZB1p9pgHp-FqTaRgxWXr9kj85oFxsDkmw2Ryqn5B7G-hCK46HfTyo=w713-h766-s-no-gm?authuser=0"
+                                class="w-full h-full object-cover" onerror="this.style.display='none';">
+                        </div>
+                        <!-- Rotating ring -->
+                        <div class="absolute inset-0 -m-2 border-2 border-sky-500/30 rounded-2xl animate-spin"
+                            style="animation-duration: 3s; border-top-color: #38bdf8;"></div>
+                    </div>
+
+                    <!-- Progress Steps -->
+                    <div id="progress-steps" class="progress-container w-80">
+                        <div class="progress-step" data-step="1">
+                            <div class="progress-step-icon pending">
+                                <i class="fa-solid fa-eye text-[10px]"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="text-xs font-semibold text-white">Vision Scan</div>
+                                <div class="text-[10px] text-slate-500">Detecting objects & hazards</div>
+                            </div>
+                            <div class="progress-bar w-16">
+                                <div class="progress-bar-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="progress-step" data-step="2">
+                            <div class="progress-step-icon pending">
+                                <i class="fa-solid fa-brain text-[10px]"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="text-xs font-semibold text-white">Safety Analysis</div>
+                                <div class="text-[10px] text-slate-500">Assessing risk levels</div>
+                            </div>
+                            <div class="progress-bar w-16">
+                                <div class="progress-bar-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Text -->
+                    <div class="mt-6 font-mono-hud text-sky-400 text-xs tracking-widest animate-pulse"
+                        id="loading-text">
+                        INITIALIZING...
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     HERO / EMPTY STATE
+                     ═══════════════════════════════════════════════════════════ -->
+                <div id="empty-state"
+                    class="hero-container absolute inset-0 z-10 bg-gradient-to-b from-[#0b1121] to-[#050b14]">
+
+                    <!-- Animated Logo -->
+                    <div class="hero-logo">
+                        <img src="https://lh3.googleusercontent.com/pw/AP1GczMeE6Zlda14eqeNydmTrMRxMCillUZdecpqIc_J1OKq537BkHue2OirieMeorXx0fA_Q1s-aHf7SZf26QFLazXlSINUb3dEaWZB1p9pgHp-FqTaRgxWXr9kj85oFxsDkmw2Ryqn5B7G-hCK46HfTyo=w713-h766-s-no-gm?authuser=0"
+                            alt="Percepta" class="w-full h-full object-cover"
+                            onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+                        <i class="fa-solid fa-eye text-5xl text-sky-400 hidden"></i>
+                    </div>
+
+                    <h2 class="hero-title text-gradient">PERCEPTA</h2>
+
+                    <!-- Typewriter Tagline -->
+                    <p class="hero-tagline">
+                        <span class="typewriter">Transforming Vision Into Safety Intelligence...</span>
+                    </p>
+
+                    <!-- CTA Buttons -->
+                    <div class="flex gap-4 flex-wrap justify-center">
+                        <label class="btn btn-primary cursor-pointer transform hover:-translate-y-1 transition-all">
+                            <i class="fa-solid fa-upload"></i>
+                            <span>ابدأ التحليل</span>
+                            <input type="file" onchange="handleUpload(this)" accept="image/*" class="hidden">
+                        </label>
+
+                        <button onclick="loadTestImage()" class="btn btn-secondary">
+                            <i class="fa-solid fa-play"></i>
+                            <span>عرض توضيحي</span>
+                        </button>
+                    </div>
+
+                    <!-- Help Button -->
+                    <button onclick="openHelpModal()"
+                        class="mt-4 text-[11px] text-slate-400 hover:text-sky-400 flex items-center gap-2 mx-auto transition-colors">
+                        <i class="fa-solid fa-circle-question"></i>
+                        كيف تستخدم الموقع؟
+                    </button>
+
+                    <!-- Feature Pills -->
+                    <div class="flex gap-3 mt-8 flex-wrap justify-center">
+                        <span
+                            class="text-[10px] text-slate-500 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+                            <i class="fa-solid fa-bolt text-amber-400"></i> Real-time Analysis
+                        </span>
+                        <span
+                            class="text-[10px] text-slate-500 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+                            <i class="fa-solid fa-shield-halved text-emerald-400"></i> Safety First
+                        </span>
+                        <span
+                            class="text-[10px] text-slate-500 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+                            <i class="fa-solid fa-robot text-sky-400"></i> AI-Powered
+                        </span>
+                    </div>
+
+                    <!-- Right Side Test Images Panel (hidden on mobile, visible on desktop) -->
+                    <style>
+                        #landing-test-images-panel {
+                            display: none;
+                        }
+
+                        @media (min-width: 768px) {
+                            #landing-test-images-panel {
+                                display: block;
+                            }
+                        }
+                    </style>
+                    <div class="fixed right-6 top-1/2 -translate-y-1/2 w-48 z-50" id="landing-test-images-panel">
+                        <div
+                            class="bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-white/10 p-4 shadow-2xl shadow-black/50">
+                            <h3
+                                class="text-slate-400 text-[10px] font-bold uppercase tracking-widest font-mono-hud mb-3 text-center">
+                                <i class="fa-solid fa-images text-sky-400 mr-1"></i>
+                                صور تجريبية
+                            </h3>
+
+                            <!-- Test Images Grid -->
+                            <div class="grid grid-cols-2 gap-2">
+
+                                <!-- Test Image 1: Construction Site -->
+                                <div class="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-700/50 hover:border-sky-500/50 transition-all hover:shadow-lg hover:shadow-sky-500/20"
+                                    onclick="loadTestImage('https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=800&auto=format&fit=crop')">
+                                    <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=400&auto=format&fit=crop"
+                                        alt="Construction Site"
+                                        class="w-full h-14 object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+                                    <div
+                                        class="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+                                        <span
+                                            class="text-[8px] text-white/90 font-semibold group-hover:text-sky-400 transition-colors">موقع
+                                            بناء</span>
+                                    </div>
+                                </div>
+
+                                <!-- Test Image 2: Industrial Factory -->
+                                <div class="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-700/50 hover:border-amber-500/50 transition-all hover:shadow-lg hover:shadow-amber-500/20"
+                                    onclick="loadTestImage('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800&auto=format&fit=crop')">
+                                    <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=400&auto=format&fit=crop"
+                                        alt="Industrial Factory"
+                                        class="w-full h-14 object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+                                    <div
+                                        class="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+                                        <span
+                                            class="text-[8px] text-white/90 font-semibold group-hover:text-amber-400 transition-colors">مصنع</span>
+                                    </div>
+                                </div>
+
+                                <!-- Test Image 3: Warehouse -->
+                                <div class="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-700/50 hover:border-emerald-500/50 transition-all hover:shadow-lg hover:shadow-emerald-500/20"
+                                    onclick="loadTestImage('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800&auto=format&fit=crop')">
+                                    <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=400&auto=format&fit=crop"
+                                        alt="Warehouse"
+                                        class="w-full h-14 object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+                                    <div
+                                        class="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+                                        <span
+                                            class="text-[8px] text-white/90 font-semibold group-hover:text-emerald-400 transition-colors">مستودع</span>
+                                    </div>
+                                </div>
+
+                                <!-- Test Image 4: Heavy Machinery -->
+                                <div class="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-700/50 hover:border-rose-500/50 transition-all hover:shadow-lg hover:shadow-rose-500/20"
+                                    onclick="loadTestImage('https://images.unsplash.com/photo-1580901368919-7738efb0f87e?q=80&w=800&auto=format&fit=crop')">
+                                    <img src="https://images.unsplash.com/photo-1580901368919-7738efb0f87e?q=80&w=400&auto=format&fit=crop"
+                                        alt="Heavy Machinery"
+                                        class="w-full h-14 object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+                                    <div
+                                        class="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+                                        <span
+                                            class="text-[8px] text-white/90 font-semibold group-hover:text-rose-400 transition-colors">معدات
+                                            ثقيلة</span>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- Hint -->
+                            <p class="text-[8px] text-slate-600 text-center mt-2 font-mono-hud">اضغط للتحليل</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 REPORT CARD (Dashboard Style)
+                 ═══════════════════════════════════════════════════════════════ -->
+            <div id="report-card" class="hidden absolute bottom-6 z-50 w-[92%] max-w-4xl">
+                <div class="glass-panel rounded-2xl overflow-hidden border-r-4 border-sky-500"
+                    style="box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+
+                    <!-- Report Header -->
+                    <div class="p-4 bg-white/5 flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors"
+                        onclick="toggleReport()">
+                        <div class="flex items-center gap-4">
+                            <!-- Risk Score Badge -->
+                            <div class="risk-score-card bg-transparent p-0">
+                                <div
+                                    class="w-16 h-16 rounded-xl bg-black/40 border border-white/10 flex flex-col items-center justify-center">
+                                    <span id="risk-score" class="risk-score-value text-2xl">--</span>
+                                    <span class="text-[8px] text-slate-500 uppercase tracking-wider">Risk</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4
+                                    class="font-bold text-white text-sm uppercase tracking-wide flex items-center gap-2">
+                                    <i class="fa-solid fa-file-shield text-sky-400"></i>
+                                    Safety Assessment
+                                </h4>
+                                <div class="flex items-center gap-3 mt-1">
+                                    <span id="risk-level" class="text-xs text-slate-400">Analyzing...</span>
+                                    <div class="risk-bar w-32 h-2">
+                                        <div id="risk-bar-fill" class="risk-bar-fill" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <button onclick="exportPDF(event)" class="btn btn-icon btn-secondary" title="Download PDF">
+                                <i class="fa-solid fa-download text-xs"></i>
+                            </button>
+                            <!-- Hide Report Button -->
+                            <button onclick="hideReportCard(event)" class="btn btn-icon btn-secondary"
+                                title="إخفاء التقرير">
+                                <i class="fa-solid fa-eye-slash text-xs"></i>
+                            </button>
+                            <i id="chevron-icon"
+                                class="fa-solid fa-chevron-up text-slate-500 text-xs transition-transform"></i>
+                        </div>
+                    </div>
+
+                    <!-- Quick Findings -->
+                    <div id="findings-list" class="px-4 py-3 bg-black/20 border-t border-white/5 flex flex-wrap gap-2">
+                        <!-- Dynamically populated -->
+                    </div>
+
+                    <!-- Full Report Body -->
+                    <div id="report-body"
+                        class="px-6 py-4 max-h-[50vh] overflow-y-auto bg-[#0b1121]/50 border-t border-white/5 transition-all"
+                        style="max-height: 0; overflow: hidden;">
+                        <div id="report-content"
+                            class="text-sm text-slate-300 leading-relaxed prose prose-invert prose-sm max-w-none"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Show Report Button (appears when report is hidden) -->
+            <button id="show-report-btn" onclick="showReportCard()"
+                class="hidden fixed bottom-24 md:bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-sky-500 hover:bg-sky-400 text-white shadow-lg shadow-sky-500/30 flex items-center justify-center transition-all hover:scale-110"
+                title="إظهار التقرير">
+                <i class="fa-solid fa-file-shield text-xl"></i>
+            </button>
+
+        </main>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         SETTINGS MODAL
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <div id="settings-modal"
+        class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-md p-6 rounded-2xl shadow-2xl transform transition-all">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-sky-500/20 flex items-center justify-center">
+                        <i class="fa-solid fa-key text-sky-400"></i>
+                    </div>
+                    API Keys
+                </h2>
+                <button onclick="closeSettings()"
+                    class="text-slate-400 hover:text-white transition-colors w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div class="p-4 bg-white/5 rounded-xl border border-white/10">
+                    <label class="block text-xs font-bold text-emerald-400 uppercase mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-eye"></i> Gemini Vision Key
+                    </label>
+                    <input type="password" id="key-vision"
+                        class="w-full bg-black/50 border border-slate-700 focus:border-sky-500 rounded-lg px-4 py-3 text-sm text-white font-mono placeholder-slate-600 transition-colors outline-none"
+                        placeholder="AIzaSy...">
+                </div>
+
+                <div class="p-4 bg-white/5 rounded-xl border border-white/10">
+                    <label class="block text-xs font-bold text-sky-400 uppercase mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-brain"></i> Gemini Reasoning Key
+                    </label>
+                    <input type="password" id="key-reasoning"
+                        class="w-full bg-black/50 border border-slate-700 focus:border-sky-500 rounded-lg px-4 py-3 text-sm text-white font-mono placeholder-slate-600 transition-colors outline-none"
+                        placeholder="AIzaSy...">
+                </div>
+
+                <div class="pt-4 border-t border-white/10 flex justify-end gap-3">
+                    <button onclick="closeSettings()"
+                        class="px-5 py-2.5 text-sm font-semibold text-slate-400 hover:text-white transition-colors">Cancel</button>
+                    <button onclick="saveSettings()" class="btn btn-primary">
+                        <i class="fa-solid fa-check"></i> Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         SCRIPTS - Complete Inline Implementation
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════
+        // PERCEPTA - Complete Inline Application
+        // Works without ES6 modules for file:// protocol compatibility
+        // ═══════════════════════════════════════════════════════════════════════
+
+        // --- Configuration ---
+        const Config = {
+            keys: {
+                get vision() {
+                    return localStorage.getItem('gemini_vision_key') || 'AIzaSyACMuZQcSo8nFPsFyOBxszyS3Jd9bSsOUI';
+                },
+                set vision(val) { localStorage.setItem('gemini_vision_key', val); },
+                get reasoning() {
+                    return localStorage.getItem('gemini_reasoning_key') || 'AIzaSyDCpjz3BkMiH0DLZSKcLuHkhVvtPSa30I4';
+                },
+                set reasoning(val) { localStorage.setItem('gemini_reasoning_key', val); }
+            },
+            endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+            proximityThreshold: 0.15
+        };
+
+        // --- State ---
+        let isProcessing = false;
+
+        // --- DOM Helpers ---
+        const $ = id => document.getElementById(id);
+
+        // --- Status Updates ---
+        function updateStatusIndicators() {
+            const visionOk = !!Config.keys.vision;
+            const reasoningOk = !!Config.keys.reasoning;
+
+            const v = $('status-vision');
+            const r = $('status-reasoning');
+            const t = $('status-text');
+
+            if (v) v.className = visionOk ? 'status-dot online' : 'status-dot offline';
+            if (r) r.className = reasoningOk ? 'status-dot online' : 'status-dot offline';
+            if (t) t.textContent = (visionOk && reasoningOk) ? 'DUAL ENGINE READY' : 'KEYS MISSING';
+        }
+
+        // --- Image to Base64 ---
+        function imageToBase64(img, quality = 0.8) {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            return canvas.toDataURL('image/jpeg', quality).split(',')[1];
+        }
+
+        // --- Gemini Vision API (Detection) ---
+        async function detectObjects(image) {
+            const base64 = imageToBase64(image, 0.8);
+
+            const prompt = `You are an industrial safety vision system. Analyze this image and identify:
+1. All persons/workers visible
+2. Heavy machinery and equipment
+3. Vehicles (forklifts, trucks, cranes)
+4. Potential hazards
+
+Return ONLY valid JSON:
+{"objects": [{"label": "person", "box_2d": [ymin, xmin, ymax, xmax], "score": 0.95}]}
+
+Rules:
+- Use 0-1000 scale for box coordinates
+- Labels: "person", "machine", "vehicle", or "hazard"
+- No markdown, just JSON`;
+
+            const response = await fetch(`${Config.endpoint}?key=${Config.keys.vision}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            { inline_data: { mime_type: 'image/jpeg', data: base64 } }
+                        ]
+                    }]
+                })
+            });
+
+            if (!response.ok) throw new Error(`Vision API: ${response.status}`);
+
+            const data = await response.json();
+            let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{"objects":[]}';
+            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(text).objects || [];
+        }
+
+        // --- Gemini Reasoning API (Analysis) ---
+        async function analyzeScene(image, detections) {
+            const summary = detections.map(d => d.label).join(', ') || 'No objects detected';
+            const base64 = imageToBase64(image, 0.6);
+
+            const prompt = `You are an expert Industrial Safety Officer.
+
+DETECTED IN SCENE: [${summary}]
+
+Analyze this industrial site image and provide a safety report.
+
+Return ONLY valid JSON:
+{
+  "risk_score": 75,
+  "risk_level": "Warning",
+  "findings": [{"type": "warning", "title": "Finding title", "description": "Description"}],
+  "safety_report": "## تقرير السلامة\\n\\n### الملخص\\n...\\n\\n### المخاطر\\n...\\n\\n### التوصيات\\n..."
+}
+
+Rules:
+- risk_score: 0-100
+- risk_level: "Safe" (0-30), "Warning" (31-70), "Danger" (71-100)
+- findings: 2-5 observations with type: "success", "warning", or "danger"
+- safety_report: Detailed markdown in Arabic
+- No markdown blocks around JSON`;
+
+            const response = await fetch(`${Config.endpoint}?key=${Config.keys.reasoning}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            { inline_data: { mime_type: 'image/jpeg', data: base64 } }
+                        ]
+                    }]
+                })
+            });
+
+            if (!response.ok) throw new Error(`Reasoning API: ${response.status}`);
+
+            const data = await response.json();
+            let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(text);
+        }
+
+        // --- Visualization ---
+        function renderDetections(image, detections) {
+            const canvas = $('output-canvas');
+            const displayImage = $('display-image');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            canvas.width = image.naturalWidth;
+            canvas.height = image.naturalHeight;
+
+            // Reset canvas to prevent RTL page direction from affecting rendering
+            ctx.direction = 'ltr';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(image, 0, 0);
+
+            // Show canvas and hide the original image to prevent flex layout conflict
+            canvas.classList.remove('hidden');
+            canvas.style.position = 'relative';
+            canvas.style.maxWidth = '100%';
+            canvas.style.maxHeight = '75vh';
+            canvas.style.width = 'auto';
+            canvas.style.height = 'auto';
+
+            if (displayImage) {
+                displayImage.classList.add('hidden');
+            }
+
+            const humans = [], machines = [];
+
+            detections.forEach(det => {
+                const [ymin, xmin, ymax, xmax] = det.box_2d;
+                const x = (xmin / 1000) * canvas.width;
+                const y = (ymin / 1000) * canvas.height;
+                const w = ((xmax - xmin) / 1000) * canvas.width;
+                const h = ((ymax - ymin) / 1000) * canvas.height;
+
+                let color;
+                if (det.label.includes('person')) {
+                    color = '#f43f5e';
+                    humans.push({ x: x + w / 2, y: y + h / 2 });
+                } else if (det.label.includes('machine') || det.label.includes('vehicle')) {
+                    color = '#f59e0b';
+                    machines.push({ x: x + w / 2, y: y + h / 2 });
+                } else {
+                    color = '#38bdf8';
+                }
+
+                // Fill
+                ctx.fillStyle = color.replace(')', ', 0.15)').replace('rgb', 'rgba').replace('#', '');
+                ctx.fillStyle = `${color}22`;
+                ctx.fillRect(x, y, w, h);
+
+                // Border
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x, y, w, h);
+
+                // Corner brackets
+                const bs = Math.min(w, h) * 0.15;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(x, y + bs); ctx.lineTo(x, y); ctx.lineTo(x + bs, y);
+                ctx.moveTo(x + w - bs, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + bs);
+                ctx.moveTo(x, y + h - bs); ctx.lineTo(x, y + h); ctx.lineTo(x + bs, y + h);
+                ctx.moveTo(x + w - bs, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - bs);
+                ctx.stroke();
+
+                // Label - with smart positioning
+                const label = `${det.label.toUpperCase()} ${Math.round(det.score * 100)}%`;
+                ctx.font = 'bold 14px "JetBrains Mono", monospace';
+                ctx.textAlign = 'left';  // Force LTR text alignment
+                ctx.textBaseline = 'middle';
+
+                const labelPadding = 8;
+                const labelHeight = 22;
+                const textMetrics = ctx.measureText(label);
+                const labelWidth = textMetrics.width + (labelPadding * 2);
+
+                // Calculate label position - prefer above the box, inside if no space
+                let labelX = x;  // Align with left edge of bounding box
+                let labelY = y - labelHeight - 4;  // Default: above the box
+
+                // If label would go above canvas, put it inside the box at top
+                if (labelY < 0) {
+                    labelY = y + 4;
+                }
+
+                // If label would extend beyond right edge of canvas, align to right edge of box
+                if (labelX + labelWidth > canvas.width) {
+                    labelX = x + w - labelWidth;
+                }
+
+                // If label would extend beyond left edge, clamp to 0
+                if (labelX < 0) {
+                    labelX = 0;
+                }
+
+                // Draw label background with rounded corners
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                const radius = 4;
+                ctx.moveTo(labelX + radius, labelY);
+                ctx.lineTo(labelX + labelWidth - radius, labelY);
+                ctx.quadraticCurveTo(labelX + labelWidth, labelY, labelX + labelWidth, labelY + radius);
+                ctx.lineTo(labelX + labelWidth, labelY + labelHeight - radius);
+                ctx.quadraticCurveTo(labelX + labelWidth, labelY + labelHeight, labelX + labelWidth - radius, labelY + labelHeight);
+                ctx.lineTo(labelX + radius, labelY + labelHeight);
+                ctx.quadraticCurveTo(labelX, labelY + labelHeight, labelX, labelY + labelHeight - radius);
+                ctx.lineTo(labelX, labelY + radius);
+                ctx.quadraticCurveTo(labelX, labelY, labelX + radius, labelY);
+                ctx.closePath();
+                ctx.fill();
+
+                // Draw label text - centered vertically in the label box
+                ctx.fillStyle = 'white';
+                ctx.fillText(label, labelX + labelPadding, labelY + (labelHeight / 2) + 1);
+            });
+
+            // Danger lines
+            const threshold = canvas.width * Config.proximityThreshold;
+            humans.forEach(h => {
+                machines.forEach(m => {
+                    const d = Math.hypot(h.x - m.x, h.y - m.y);
+                    if (d < threshold) {
+                        ctx.beginPath();
+                        ctx.moveTo(h.x, h.y);
+                        ctx.lineTo(m.x, m.y);
+                        ctx.strokeStyle = '#f43f5e';
+                        ctx.lineWidth = 3;
+                        ctx.setLineDash([10, 10]);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+
+                        const midX = (h.x + m.x) / 2, midY = (h.y + m.y) / 2;
+                        ctx.fillStyle = '#f43f5e';
+                        ctx.fillRect(midX - 40, midY - 12, 80, 24);
+                        ctx.fillStyle = 'white';
+                        ctx.font = 'bold 12px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('⚠ DANGER', midX, midY + 4);
+                        ctx.textAlign = 'left';
+                    }
+                });
+            });
+
+            image.style.opacity = '0';
+        }
+
+        // --- Report Display ---
+        function displayReport(report) {
+            const riskScore = $('risk-score');
+            const riskLevel = $('risk-level');
+            const riskBar = $('risk-bar-fill');
+            const findingsList = $('findings-list');
+            const reportContent = $('report-content');
+            const reportCard = $('report-card');
+
+            if (riskScore) {
+                animateValue(riskScore, 0, report.risk_score || 0, 1000);
+                const cls = report.risk_score <= 30 ? 'safe' : report.risk_score <= 70 ? 'warning' : 'danger';
+                riskScore.className = 'risk-score-value ' + cls;
+            }
+
+            if (riskLevel) riskLevel.textContent = report.risk_level || 'Unknown';
+
+            if (riskBar) {
+                riskBar.style.width = `${report.risk_score || 0}%`;
+                const cls = report.risk_score <= 30 ? 'safe' : report.risk_score <= 70 ? 'warning' : 'danger';
+                riskBar.className = 'risk-bar-fill ' + cls;
+            }
+
+            if (findingsList && report.findings) {
+                findingsList.innerHTML = report.findings.map(f => `
+                    <div class="finding-item ${f.type}">
+                        <i class="fa-solid ${f.type === 'success' ? 'fa-check' : f.type === 'danger' ? 'fa-triangle-exclamation' : 'fa-circle-exclamation'}"></i>
+                        <span>${f.title || f.description}</span>
+                    </div>
+                `).join('');
+            }
+
+            if (reportContent && window.marked) {
+                reportContent.innerHTML = marked.parse(report.safety_report || '');
+            }
+
+            if (reportCard) {
+                reportCard.classList.remove('hidden');
+                reportCard.classList.add('animate-in');
+            }
+        }
+
+        function animateValue(el, start, end, duration) {
+            const startTime = performance.now();
+            function update(time) {
+                const progress = Math.min((time - startTime) / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                el.textContent = Math.round(start + (end - start) * eased);
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        // --- Progress Updates ---
+        function updateProgress(step, message) {
+            const steps = document.querySelectorAll('#progress-steps .progress-step');
+            steps.forEach((el, i) => {
+                const icon = el.querySelector('.progress-step-icon');
+                if (i < step) {
+                    el.classList.remove('active');
+                    el.classList.add('completed');
+                    if (icon) { icon.classList.remove('active', 'pending'); icon.classList.add('completed'); }
+                } else if (i === step) {
+                    el.classList.add('active');
+                    el.classList.remove('completed');
+                    if (icon) { icon.classList.remove('pending', 'completed'); icon.classList.add('active'); }
+                } else {
+                    el.classList.remove('active', 'completed');
+                    if (icon) { icon.classList.remove('active', 'completed'); icon.classList.add('pending'); }
+                }
+            });
+
+            const loadingText = $('loading-text');
+            if (loadingText) loadingText.textContent = message.toUpperCase();
+        }
+
+        function showLoading(show) {
+            const overlay = $('loading-overlay');
+            if (overlay) overlay.classList.toggle('hidden', !show);
+        }
+
+        // --- Main Analysis Pipeline ---
+        async function runAnalysis(image) {
+            if (isProcessing) return;
+            isProcessing = true;
+
+            showLoading(true);
+
+            try {
+                // Step 1: Vision Detection
+                updateProgress(0, 'Scanning image...');
+                const detections = await detectObjects(image);
+                renderDetections(image, detections);
+
+                // Step 2: Safety Analysis
+                updateProgress(1, 'Analyzing safety...');
+                const report = await analyzeScene(image, detections);
+                displayReport(report);
+
+                updateProgress(2, 'Complete!');
+
+            } catch (error) {
+                console.error('Analysis error:', error);
+                updateProgress(0, 'Error: ' + error.message);
+            } finally {
+                isProcessing = false;
+                setTimeout(() => showLoading(false), 500);
+            }
+        }
+
+        // --- Event Handlers (Global) ---
+        window.handleUpload = function (input) {
+            const file = input.files?.[0];
+            if (!file) return;
+
+            const img = $('display-image');
+            if (!img) return;
+
+            img.src = URL.createObjectURL(file);
+            $('empty-state')?.classList.add('hidden');
+            img.classList.remove('hidden');
+            $('report-card')?.classList.add('hidden');
+
+            // Show back button and hide landing test images
+            $('back-to-home-btn')?.classList.remove('hidden');
+            $('landing-test-images-panel')?.classList.add('hidden');
+
+            img.onload = () => runAnalysis(img);
+        };
+
+        window.loadTestImage = function (imageUrl) {
+            const img = $('display-image');
+            if (!img) return;
+
+            // Use provided URL or default to construction image
+            const defaultImage = 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1000&auto=format&fit=crop';
+            const targetUrl = imageUrl || defaultImage;
+
+            img.crossOrigin = 'Anonymous';
+            img.src = targetUrl;
+            $('empty-state')?.classList.add('hidden');
+            img.classList.remove('hidden');
+            $('report-card')?.classList.add('hidden');
+
+            // Show back button
+            $('back-to-home-btn')?.classList.remove('hidden');
+            // Hide landing page test images panel
+            $('landing-test-images-panel')?.classList.add('hidden');
+
+            img.onload = () => runAnalysis(img);
+            img.onerror = () => {
+                console.warn('Failed to load image, using fallback');
+                img.src = defaultImage;
+            };
+        };
+
+        // Go back to home/landing page
+        window.goBackToHome = function () {
+            // Hide image and canvas
+            $('display-image')?.classList.add('hidden');
+            $('output-canvas')?.classList.add('hidden');
+            $('report-card')?.classList.add('hidden');
+
+            // Show landing page
+            $('empty-state')?.classList.remove('hidden');
+
+            // Hide back button
+            $('back-to-home-btn')?.classList.add('hidden');
+
+            // Show landing page test images panel
+            $('landing-test-images-panel')?.classList.remove('hidden');
+        };
+
+        // Help Modal Functions
+        window.openHelpModal = function () {
+            $('help-modal')?.classList.remove('hidden');
+        };
+
+        window.closeHelpModal = function () {
+            $('help-modal')?.classList.add('hidden');
+        };
+
+        window.toggleReport = function () {
+            const body = $('report-body');
+            if (body) {
+                const isOpen = body.style.maxHeight !== '0px';
+                body.style.maxHeight = isOpen ? '0px' : '60vh';
+                body.style.overflow = isOpen ? 'hidden' : 'auto';
+            }
+        };
+
+        window.exportPDF = function (event) {
+            event?.stopPropagation();
+            const content = $('report-content')?.innerHTML;
+            if (!content || !window.html2pdf) return;
+
+            const el = document.createElement('div');
+            el.innerHTML = content;
+            el.style.cssText = 'padding:20px;background:white;color:black;';
+
+            html2pdf().set({ margin: 10, filename: 'percepta-safety-report.pdf' }).from(el).save();
+        };
+
+        window.openSettings = function () {
+            $('settings-modal')?.classList.remove('hidden');
+            const vk = $('key-vision');
+            const rk = $('key-reasoning');
+            if (vk) vk.value = Config.keys.vision;
+            if (rk) rk.value = Config.keys.reasoning;
+        };
+
+        window.closeSettings = function () {
+            $('settings-modal')?.classList.add('hidden');
+        };
+
+        window.saveSettings = function () {
+            const vk = $('key-vision')?.value?.trim();
+            const rk = $('key-reasoning')?.value?.trim();
+            if (vk) Config.keys.vision = vk;
+            if (rk) Config.keys.reasoning = rk;
+            updateStatusIndicators();
+            closeSettings();
+        };
+
+        window.switchSidebarTab = function (tab) {
+            $('content-controls')?.classList.toggle('hidden', tab !== 'controls');
+            $('content-history')?.classList.toggle('hidden', tab !== 'history');
+
+            const tc = $('tab-controls');
+            const th = $('tab-history');
+            if (tc) {
+                tc.classList.toggle('text-sky-400', tab === 'controls');
+                tc.classList.toggle('border-b-2', tab === 'controls');
+                tc.classList.toggle('border-sky-500', tab === 'controls');
+                tc.classList.toggle('bg-white/5', tab === 'controls');
+                tc.classList.toggle('text-slate-500', tab !== 'controls');
+            }
+            if (th) {
+                th.classList.toggle('text-sky-400', tab === 'history');
+                th.classList.toggle('border-b-2', tab === 'history');
+                th.classList.toggle('border-sky-500', tab === 'history');
+                th.classList.toggle('bg-white/5', tab === 'history');
+                th.classList.toggle('text-slate-500', tab !== 'history');
+            }
+        };
+
+        // Report Visibility Functions
+        window.hideReportCard = function (event) {
+            if (event) event.stopPropagation();
+            $('report-card')?.classList.add('hidden');
+            $('show-report-btn')?.classList.remove('hidden');
+        };
+
+        window.showReportCard = function () {
+            $('report-card')?.classList.remove('hidden');
+            $('show-report-btn')?.classList.add('hidden');
+        };
+
+        // --- Initialize ---
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('[Percepta] Initializing...');
+            updateStatusIndicators();
+            console.log('[Percepta] Ready!');
+        });
+    </script>
+
+    <!-- Finding item styles -->
+    <style>
+        .finding-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .finding-item.success {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .finding-item.warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .finding-item.danger {
+            background: rgba(244, 63, 94, 0.15);
+            color: #f43f5e;
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+
+        /* Prose overrides for Arabic */
+        .prose h1,
+        .prose h2,
+        .prose h3 {
+            color: #f1f5f9;
+        }
+
+        .prose p {
+            color: #94a3b8;
+        }
+
+        .prose strong {
+            color: #f59e0b;
+        }
+
+        .prose ul {
+            color: #94a3b8;
+        }
+    </style>
+
+</body>
+
+</html>
